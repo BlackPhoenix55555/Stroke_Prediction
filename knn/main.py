@@ -56,11 +56,6 @@ brier = np.mean((y_true - y_prob)**2)
 y_prob_clip = np.clip(y_prob, 1e-9, 1-1e-9)
 log_loss = -np.mean(y_true*np.log(y_prob_clip) + (1-y_true)*np.log(1-y_prob_clip))
 
-ranks = y_prob.argsort().argsort()
-num_pos = np.sum(y_true == 1)
-num_neg = np.sum(y_true == 0)
-roc_auc = (np.sum(ranks[y_true == 1]) - (num_pos*(num_pos-1)/2)) / (num_pos*num_neg + 1e-9)
-
 print("\nConfusion Matrix:")
 print(f"[[TN={TN}, FP={FP}], [FN={FN}, TP={TP}]]")
 
@@ -71,5 +66,8 @@ print(f"Specificity  = {specificity:.4f}")
 print(f"F1 Score     = {f1:.4f}")
 print(f"Brier Score  = {brier:.6f}")
 print(f"Log Loss     = {log_loss:.6f}")
-print(f"ROC-AUC      = {roc_auc:.6f}")
+from sklearn.metrics import roc_auc_score
+
+auc = roc_auc_score(y, y_prob)
+print("ROC-AUC:", auc)
 
