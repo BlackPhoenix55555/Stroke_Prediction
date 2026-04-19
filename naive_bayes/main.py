@@ -104,3 +104,7 @@ recall = TP / (TP + FN + 1e-9)
 print("Accuracy:", accuracy)
 print("Precision:", precision)
 print("Recall:", recall)
+from sklearn.metrics import roc_auc_score
+
+auc = roc_auc_score(y, y_prob)
+print("ROC-AUC:", auc)
