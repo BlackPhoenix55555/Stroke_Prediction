@@ -1,131 +1,72 @@
-# 🧠 Brain Stroke Prediction using Machine Learning
+# Stroke Prediction – Deployed Predictive Model
 
-## 📌 Overview
+An end‑to‑end machine learning pipeline that predicts the risk of stroke from patient health data, deployed as a live REST API. The project is deliberately framed as a **business‑critical classification task** — directly analogous to **lead scoring**, **enrollment prediction**, and **retention modeling** in a product or marketing context.
 
-This project focuses on building a **machine learning model to predict stroke risk** using patient demographic and medical data. It demonstrates strong capabilities in **data preprocessing, statistical analysis, and model evaluation**, with an emphasis on handling real-world data challenges like class imbalance and missing values.
-
----
-
-## 🎯 Objective
-
-To develop a reliable predictive system that can identify individuals at high risk of stroke, enabling early intervention and better healthcare decision-making.
+**Key achievement:** Built a custom synthetic data augmentation strategy to overcome severe class imbalance (<5% positive cases) and tuned the model to prioritize **recall (catching positives)** over accuracy, exactly as you would when identifying at‑risk learners or churning customers.
 
 ---
 
-## 🛠️ Tech Stack
+## Business Use Case
 
-* **Python**
-* **Scikit-learn**
-* **Pandas, NumPy**
-* **Matplotlib / Seaborn**
-* **Statistical Analysis**
+- **Problem:** In any subscription or enrollment business, only a tiny fraction of users churn, convert, or fall into a high‑value segment. Standard accuracy becomes misleading.
+- **Solution:** Treat the minority class (stroke = churn / lead conversion) as the **target to capture**. Maximize recall while keeping the model honest and deployable.
+- **Direct analogs:** Lead scoring, retention prediction, customer lifetime value tiering.
 
 ---
 
-## 🔄 Workflow
+## Dataset
 
-### 1️⃣ Data Preprocessing
-
-* Handled missing values using imputation techniques
-* Encoded categorical variables
-* Detected and treated outliers
-* Performed feature scaling
+- **Source:** Public stroke prediction dataset (Kaggle / Healthcare data)
+- **Features:** Gender, Age, Hypertension, Heart Disease, Ever Married, Work Type, Residence Type, Average Glucose Level, BMI, Smoking Status
+- **Target:** Stroke (1 = stroke, 0 = healthy)
+- **Imbalance:** ~5% positive class – severe skew
 
 ---
 
-### 2️⃣ Exploratory Data Analysis (EDA)
+## Methodology
 
-* Analyzed feature distributions
-* Identified correlations between variables
-* Visualized trends and patterns
+### Custom Data Augmentation (No SMOTE, No External Resamplers)
 
----
+Class imbalance was addressed with a hand‑crafted augmentation strategy specifically designed to respect the **independence assumption of Naive Bayes**:
 
-### 3️⃣ Modeling
+- **Inverse Transform Sampling (ECDF)** – Empirical CDF built per continuous feature from the minority class; uniform random numbers are inverted through linear interpolation, producing realistic samples within the original data range.
+- **Convolution‑Based Smoothing** – Tiny Gaussian jitter added to the ECDF samples (`σ = 0.01 × feature_std`) to avoid exact duplicates and simulate natural variance.
+- **Box‑Muller Gaussian Generation** – For features with near‑normal distributions (e.g., BMI), synthetic values are generated parametrically using the Box‑Muller transform.
+- **Discrete Probability Sampling** – Categorical features are sampled from the observed probability mass function of the minority class.
+- **Compositional Sampling** – All features are drawn independently, then concatenated. This compositional design perfectly matches the conditional independence assumption of Naive Bayes.
 
-Implemented and compared multiple supervised learning algorithms:
+This approach expands the minority class to a **fully balanced training set** without any third‑party imbalance‑learn libraries.
 
-* Logistic Regression
-* Naive Bayes
-* K-Nearest Neighbors (KNN)
+### Dimensionality Reduction
 
-Applied:
+- **PCA** applied after StandardScaler, retaining **95% of the variance** to reduce noise and improve generalization.
 
-* Cross-validation
-* Hyperparameter tuning
+### Classifier
 
----
+- **Gaussian Naive Bayes** – chosen for its alignment with the compositional augmentation and its simplicity, interpretability, and speed.
 
-## 📊 Evaluation Metrics
+### Decision Threshold Tuning
 
-* **Accuracy:** 95.74%
-* Precision
-* Recall
-* F1-score
-* ROC-AUC
+- Instead of the default 0.5 threshold, the final model uses a **lower threshold (0.3)** to aggressively capture minority class instances.
+- This **sacrifices overall accuracy** but **boosts recall to ~83%**, directly mimicking a business environment where missing a potential stroke (or a churning learner) is far more costly than a false alarm.
 
 ---
 
-## ⚖️ Handling Real-World Challenges
+## Key Results (Honest, Unbiased)
 
-* Addressed **class imbalance** using statistical techniques
-* Ensured model robustness through validation
-* Interpreted feature importance for better explainability
+| Metric | Value |
+|--------|-------|
+| **Recall (stroke=1)** | **0.83** |
+| **ROC‑AUC** | **0.77** |
+| Precision (stroke=1) | 0.10 |
+| Accuracy | 0.66 |
 
----
-
-## 📈 Results
-
-* Achieved **high accuracy (95.74%)** across models
-* Built a reliable and interpretable prediction system
-* Demonstrated strong analytical reasoning in model validation
+> ℹ️ The low accuracy is **intentional** – it reflects the model’s focus on capturing almost all positive cases in a highly imbalanced setting. This is the correct trade‑off for churn/lead‑scoring problems.
 
 ---
 
-## 🚀 How to Run
+## API Usage
 
-### 🔹 Prerequisites
+The model is deployed as a **Flask REST API**. Send a JSON payload to the `/predict` endpoint.
 
-Install required libraries:
-
-```
-pip install pandas numpy scikit-learn matplotlib seaborn
-```
-
-### 🔹 Steps
-
-1. Clone the repository
-2. Load the dataset
-3. Run preprocessing scripts
-4. Train models
-5. Evaluate results
-
----
-
-## 🔮 Future Improvements
-
-* Use advanced models (Random Forest, XGBoost)
-* Deploy model using Flask/FastAPI
-* Integrate real-time prediction system
-* Improve performance using ensemble techniques
-
----
-
-## 📌 Key Learnings
-
-* Importance of data preprocessing in ML
-* Handling class imbalance effectively
-* Model comparison and evaluation techniques
-* Translating data into actionable healthcare insights
-
----
-
-## 🤝 Contribution
-
-Contributions and suggestions are welcome.
-
----
-
-## 📬 Contact
-
-Feel free to connect for collaboration or discussion on machine learning and healthcare analytics.
+### Endpoint
